@@ -48,13 +48,13 @@ async function getTheatres() {
   return res.json();
 }
 
-export default async function MovieDetailsPage({ params: { id } }: { params: { id: string } }) {
-  const [movie, ratingsData, commentsData, theatresData] = await Promise.all([
-    getMovieDetails(id),
-    getMovieRatings(id),
-    getMovieComments(id),
-    getTheatres(),
-  ]);
+export default async function MovieDetailsPage({ params }: { params: { id: string } }) {
+  const awaitedParams = await params;
+  const { id } = awaitedParams;
+  const movie = await getMovieDetails(id);
+  const ratingsData = await getMovieRatings(id);
+  const commentsData = await getMovieComments(id);
+  const theatresData = await getTheatres();
 
   const ratings = ratingsData.data;
   const comments = commentsData.data;

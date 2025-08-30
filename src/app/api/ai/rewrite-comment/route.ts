@@ -1,10 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import rateLimiter from '@/lib/rate-limiter';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-export async function POST(request: Request) {
+const limiter = rateLimiter({
+  interval: 60 * 1000, // 60 seconds
+  uniqueTokenPerInterval: 500, // 500 users per second
+});
+
+export async function POST(request: NextRequest) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -12,6 +18,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    await limiter.check(request, 10, userId); // 10 requests per user per 60 seconds
     const { comment } = await request.json();
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     const prompt = `Rewrite the following user comment for a movie theatre experience to be more clear, concise, and engaging. Do not add any information that is not present in the original comment.
